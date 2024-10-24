@@ -42,6 +42,21 @@ class Button:
 
         return self._create_keyboard(keyboard)
     
+
+    def contact_user_button(self, user_id):
+        keyboard = types.InlineKeyboardMarkup()
+        keyboard.add(types.InlineKeyboardButton("Связаться с пользователем", callback_data=f"contact_user:{user_id}"))
+        return keyboard
+
+    
+    def cancel(self):
+
+        k = [
+            "🔕 Отмена"
+        ]
+
+        return self._create_keyboard(k)
+    
     def admin(self):
         keyboard = [
             "Одобрить заведения",
