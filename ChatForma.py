@@ -57,43 +57,45 @@ async def handle_user_message(message: types.Message, state: FSMContext):
     else:
         user_info = f"{message.from_user.full_name}"
 
-    # Готовим клавиатуру
-    keyboard = btn.contact_user_button(user_id)
+    
+    print(user_id)
 
     # Отправляем сообщение администратору в зависимости от типа контента
     if message.content_type == 'text':
         sent_message = await bot.send_message(
-            chat_id=admin2,
+            chat_id=admin,
             text=f"Новое сообщение от пользователя {user_info}:\n{message.text}",
-            reply_markup=keyboard
+            reply_markup=btn.contact_user_button(user_id)
         )
     elif message.content_type == 'photo':
         sent_message = await bot.send_photo(
-            chat_id=admin2,
+            chat_id=admin,
             photo=message.photo[-1].file_id,
             caption=f"Новое фото от пользователя {user_info}",
-            reply_markup=keyboard
+            reply_markup=btn.contact_user_button(user_id)
         )
     elif message.content_type == 'document':
         sent_message = await bot.send_document(
-            chat_id=admin2,
+            chat_id=admin,
             document=message.document.file_id,
             caption=f"Новое сообщение от пользователя {user_info}",
-            reply_markup=keyboard
+            reply_markup=btn.contact_user_button(user_id)
         )
     else:
         # Для других типов контента
         sent_message = await bot.send_message(
-            chat_id=admin2,
+            chat_id=admin,
             text=f"Новое сообщение от пользователя {user_info}: (тип контента: {message.content_type})",
-            reply_markup=keyboard
+            reply_markup=btn.contact_user_button(user_id)
         )
-        await message.forward(admin2)  # Пересылаем контент без reply_markup
+        await message.forward(admin)  # Пересылаем контент без reply_markup
 
     # Сохраняем соответствие между сообщением и user_id
     User_admin_mapping[sent_message.message_id] = user_id
 
     await message.answer("Сообщение отправлено оператору. Ожидайте ответа.")
+
+    await state.finish()
 
 
 
