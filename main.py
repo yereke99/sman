@@ -43,6 +43,7 @@ async def start_handler(message: types.Message):
         reply_markup=btn.menu()
     )
 
+"""
 @dp.callback_query_handler(lambda call: call.data.startswith("contact_user:"))
 async def callback_inline(call: types.CallbackQuery):
     print("INLINE")
@@ -58,6 +59,7 @@ async def callback_inline(call: types.CallbackQuery):
     
 
 
+"""
 # 🔍 Посмотреть мои заведения
 @dp.message_handler(commands=['chat'])
 @dp.message_handler(Text(equals="🔍 Чат с оператором"), content_types=['text'])
@@ -69,21 +71,23 @@ async def handler(message: types.Message):
 
 
 
-"""
 # Обработчик нажатия Inline-кнопки
 @dp.callback_query_handler()
-async def process_contact_user_callback(callback_query: types.CallbackQuery):
+async def process_contact_user_callback(callback_query: types.CallbackQuery, state: FSMContext):
     print("here")
     if callback_query.data.startswith("contact_user:"):
         user_id = int(callback_query.data.split(':')[1])
         print(user_id)
-        admin_id = callback_query.from_user.id
         
-        User_admin_mapping[admin_id] = user_id
+
+        async with state.proxy() as data:
+            data['user_id'] = user_id
         
         await bot.send_message(callback_query.message.chat.id, f"Отправьте сообщение для пользователя {user_id}:")
+        await Chat.sending_for_message.set()
+
         await bot.answer_callback_query(callback_query.id)
-"""
+
 
 
 

@@ -52,7 +52,7 @@ class Button:
     def cancel(self):
 
         k = [
-            "🔕 Отмена"
+            "⬅️ Выйти из чата"
         ]
 
         return self._create_keyboard(k)
