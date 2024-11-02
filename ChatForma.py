@@ -54,6 +54,8 @@ async def cancell_handler(message: types.Message, state: FSMContext):
         
     await bot.send_message(admin2, text="Пользователь ⬅️ покинул чат", reply_markup=btn.admin())
 
+    await state.finish()
+
 @dp.message_handler(state=Chat.sending_for_message, content_types=types.ContentType.ANY)
 async def handle_user_message(message: types.Message, state: FSMContext):
     user_id = message.from_user.id
@@ -70,8 +72,6 @@ async def handle_user_message(message: types.Message, state: FSMContext):
     async with state.proxy() as data:
         data['msg'] = message.text
         
-    
-
     # Отправляем сообщение администратору в зависимости от типа контента
     if message.content_type == 'text':
         sent_message = await bot.send_message(

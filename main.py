@@ -49,21 +49,110 @@ No pig leather""",
     )
 
 
-"""
-@dp.callback_query_handler(lambda call: call.data.startswith("contact_user:"))
-async def callback_inline(call: types.CallbackQuery):
-    print("INLINE")
-    if call.data.startswith("contact_user:"):
-        print("INLINE обработчик сработал")
+# Запуск функции отправки сообщения при старте бота
+@dp.message_handler(commands=["s1"])
+async def start_handler(message: types.Message):
+    await send_product_to_channel()
+    await message.answer("Товар успешно отправлен в канал.")
 
-        # Распарсим ID пользователя из callback данных
-        user_id = call.data.split(":")[1]
-        
-        # Отправим сообщение, что inline-кнопка успешно обработана
-        await bot.send_message(call.message.chat.id, f"Отправьте сообщение для пользователя {user_id}:")
-        await call.answer()
-    
-"""
+@dp.message_handler(commands=["s2"])
+async def start_handler(message: types.Message):
+    await send_product_to_channel2()
+    await message.answer("Товар успешно отправлен в канал.")
+
+@dp.message_handler(commands=["s3"])
+async def start_handler(message: types.Message):
+    await send_product_to_channel3()
+    await message.answer("Товар успешно отправлен в канал.")
+
+
+
+
+async def send_product_to_channel():
+    # Идентификатор канала
+    channel_id = "@sman_online"
+
+    # Данные товара
+    product_name = "Лофер GIAMPIERONICOLA"
+    price = "157 000 KZT"
+    size = "Размер: 40"
+    color = "Цвет: синий"
+    code = "Код: MN19/24-1"
+    text = f"{product_name}\nЦена: {price}\n{size}\n{color}\n{code}"
+
+    # Ссылка на бота
+    bot_username = "smanonline_bot"
+    bot_url = f"https://t.me/{bot_username}?start=buy_product_MN19_24_1"
+
+    # Создание Inline-кнопки "Сатып алу"
+    keyboard = types.InlineKeyboardMarkup()
+    keyboard.add(types.InlineKeyboardButton("Сатып алу", url=bot_url))
+
+    # Отправка сообщения с фото товара, описанием и кнопкой в канал
+    await bot.send_photo(
+        chat_id=channel_id,
+        photo="https://sman.kz/upload/resize_cache/iblock/840/450_450_140cd750bba9870f18aada2478b24840a/nkblq0co5dr7z3loc1qvvfro4uuqd88o.jpg",  # Ссылка на фото товара или загрузите локальный файл
+        caption=text,
+        reply_markup=keyboard
+    )
+
+
+
+async def send_product_to_channel2():
+    # Идентификатор канала
+    channel_id = "@sman_online"
+
+    # Данные товара
+    product_name = "Мужские кроссовки"
+    price = "157 000 KZT"
+    size = "Размер: 42"
+    stock = "В наличии: 5 пар"
+    text = f"{product_name}\nЦена: {price}\n{size}\n{stock}"
+
+    # Ссылка на бота
+    bot_username = "smanonline_bot"
+    bot_url = f"https://t.me/{bot_username}?start=buy_product"
+
+    # Создание Inline-кнопки "Сатып алу"
+    keyboard = types.InlineKeyboardMarkup()
+    keyboard.add(types.InlineKeyboardButton("Сатып алу", url=bot_url))
+
+    # Отправка сообщения с фото товара, описанием и кнопкой в канал
+    await bot.send_photo(
+        chat_id=channel_id,
+        photo="https://sman.kz/upload/resize_cache/iblock/bff/450_450_140cd750bba9870f18aada2478b24840a/6fbzu6308pskqaf2755w9aiuxzbvkzh0.jpg",  # Ссылка на фото товара или загрузите локальный файл
+        caption=text,
+        reply_markup=keyboard
+    )
+
+async def send_product_to_channel3():
+    # Идентификатор канала
+    channel_id = "@sman_online"
+
+    # Данные товара
+    product_name = "Лофер GIAMPIERONICOLA"
+    price = "157 000 KZT"
+    size = "Размер: 39"
+    color = "Цвет: черный"
+    code = "Код: MN24/24-1"
+    text = f"{product_name}\nЦена: {price}\n{size}\n{color}\n{code}"
+
+    # Ссылка на бота
+    bot_username = "smanonline_bot"
+    bot_url = f"https://t.me/{bot_username}?start=buy_product_MN24_24_1"
+
+    # Создание Inline-кнопки "Сатып алу"
+    keyboard = types.InlineKeyboardMarkup()
+    keyboard.add(types.InlineKeyboardButton("Сатып алу", url=bot_url))
+
+    # Отправка сообщения с фото товара, описанием и кнопкой в канал
+    await bot.send_photo(
+        chat_id=channel_id,
+        photo="https://sman.kz/upload/resize_cache/iblock/b9f/450_450_140cd750bba9870f18aada2478b24840a/vapke21k1n4bhl85bv2vtyu1vo7dthc6.jpg",  # Новое фото товара
+        caption=text,
+        reply_markup=keyboard
+    )
+
 
 
 # 🔍 Посмотреть мои заведения
@@ -199,6 +288,21 @@ async def process_callback(callback_query: types.CallbackQuery, state: FSMContex
             message_id=message_id,
             text="Сіз таңдадыңыз: Әйелдер туфлиі. Жақын арада тауарды Telegram ботта онлайн түрде рәсімдей аласыз."
         )
+        
+    # Обработка связи с пользователем
+    elif data.startswith("contact_user:"):
+        user_id = int(data.split(':')[1])
+        print(f"Связь с пользователем {user_id}")
+        
+        async with state.proxy() as state_data:
+            state_data['user_id'] = user_id
+
+        await bot.edit_message_text(
+            chat_id=chat_id,
+            message_id=message_id,
+            text=f"Отправьте сообщение для пользователя {user_id}:"
+        )
+        await Chat.sending_for_message.set()
 
     # Ответ для callback_query
     await bot.answer_callback_query(callback_query.id)
