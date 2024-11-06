@@ -20,6 +20,9 @@ from config import*
 import os
 from aiogram.types import InputMediaPhoto, InputMediaVideo
 
+
+from data import SHOES_DATA
+
 generator = Generator()
 btn = Button()
 db = Database()

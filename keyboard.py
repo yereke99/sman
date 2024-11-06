@@ -5,7 +5,7 @@ import datetime
 from load import bot
 from database import Database
 from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton
-
+from aiogram.types import ReplyKeyboardMarkup, KeyboardButton
 
 class Button:
     def __init__(self) -> None:
@@ -22,7 +22,7 @@ class Button:
     def payment(self):
 
         keyboard = types.InlineKeyboardMarkup()
-        keyboard.add(types.InlineKeyboardButton("💳 Төлем жасау", url="https://pay.kaspi.kz/pay/0wdcrpat"))
+        keyboard.add(types.InlineKeyboardButton("💳 Төлем жасау", url="https://pay.kaspi.kz/pay/achsteg3"))
         
         return keyboard
     
@@ -66,8 +66,26 @@ class Button:
         return keyboard
 
 
+    def buy(self):
+        k = [
+            "👟 Сатып алу",
+        ]
 
+        return self._create_keyboard(k)
 
+    def approve(self):
+        k = [
+            "✔️ Иә", "🔴 Жоқ",
+        ]
+
+        return self._create_keyboard(k)
+
+    # Функция өлшемдерге арналған батырмалар жасау үшін
+    def size_keyboard(self, sizes):
+        keyboard = ReplyKeyboardMarkup(resize_keyboard=True)
+        for size in sizes:
+            keyboard.add(KeyboardButton(str(size)))
+        return keyboard
 
 
     def buy_cinema(self):
@@ -81,6 +99,7 @@ class Button:
     def menu(self):
         keyboard = InlineKeyboardMarkup(row_width=1)
         keyboard.add(
+            InlineKeyboardButton("👟 Код арқылы аяқ киім сатып алу", callback_data="buy_shoes_by_code"),
             InlineKeyboardButton("👟 Аяқ киім сатып алу", callback_data="buy_shoes"),
             InlineKeyboardButton("📞 Менеджермен байланысу", callback_data="contact_manager"),
             InlineKeyboardButton("📦 Менің тапсырыстарым", callback_data="my_orders"),
@@ -104,14 +123,6 @@ class Button:
 
         return self._create_keyboard(k)
     
-    def admin(self):
-        keyboard = [
-            "Одобрить заведения",
-            "Отклонить заведения",
-            "Просмотреть список ожидающих заведений",
-        ]
-
-        return self._create_keyboard(keyboard)
 
     def send_contact(self):
 
@@ -119,3 +130,9 @@ class Button:
         keyboard.add(types.KeyboardButton("📱 Контактімен бөлісу", request_contact=True))
 
         return keyboard
+    
+    def cancel(self):
+
+        return self._create_keyboard([
+            "🔕 Бас тарту",
+        ])

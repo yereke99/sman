@@ -9,18 +9,22 @@ from FormaAdmin import *
 from keyboard import*
 from database import*
 from config import*
-from Forma import*
+#from Forma import*
 import asyncio
 from traits import*
 import time
 from FormaAdmin import*
 from ChatForma import*
+from data import SHOES_DATA
+from Formas import Forma
+
 
 
 generator = Generator()
 btn = Button()
 db = Database()
 
+"""
 @dp.message_handler(commands=['start', 'go'])
 async def start_handler(message: types.Message):
     print(message.from_user.id)
@@ -37,22 +41,61 @@ async def start_handler(message: types.Message):
     await bot.send_message(
         message.from_user.id,
         text=f"Сәлеметсіз бе, {message.from_user.first_name}! 👋\n"
-            """SMAN - премиум Қазақ бренді. 
+            SMAN - премиум Қазақ бренді. 
 
 4 мемлекетте тігіледі 🇵🇹🇨🇳🇹🇷🇮🇹
 
 200 ерлер мен әйелдерге әлемнің қаймақтарын алып келеміз
 
-No pig leather""",
+No pig leather,
         parse_mode="Markdown",
         reply_markup=btn.menu()
     )
+
+"""
+
+@dp.message_handler(commands=['start'])
+async def start_command_handler(message: types.Message, state: FSMContext):
+    args = message.get_args()
+
+    if args.startswith("buy_"):
+        product_code = args.replace("buy_", "")
+
+        # SHOES_DATA ішінен тауарды іздеу
+        for category, prices in SHOES_DATA.items():
+            for price, products in prices.items():
+                for product in products:
+                    if product["code"] == product_code:
+                        await state.update_data(type=product_code)
+                        await Forma.s3.set()  # `Forma.s2` күйіне өту
+
+                        # Пайдаланушыға тауар туралы ақпаратты жіберу және "Сатып алу" батырмасын көрсету
+                        await message.answer(
+                            f"Сіз {category} - {price} KZT тауарын таңдадыңыз.\n"
+                            f"📏 Қол жетімді өлшемдер: {', '.join(map(str, product['sizes']))}\n"
+                            f"🔖 Код: {product_code}\n\n"
+                            "Өлшемді таңдау үшін төмендегі батырманы басыңыз.",
+                            reply_markup=btn.size_keyboard(product['sizes'])  # Өлшемдер тізімін көрсететін батырмалар
+                        )
+                        return
+
+        # Егер код табылмаса
+        await message.answer("Кешіріңіз, бұл код бойынша тауар табылмады.")
+    else:
+        await message.answer("Ботқа қош келдіңіз! Сатып алу үшін кодты таңдаңыз.")
+
+
+# Запуск функции отправки сообщения при старте бота
+@dp.message_handler(commands=["s"])
+async def start_handler(message: types.Message):
+    await send_product_to_channel()
+    await message.answer("Товар успешно отправлен в канал.")
 
 
 # Запуск функции отправки сообщения при старте бота
 @dp.message_handler(commands=["s1"])
 async def start_handler(message: types.Message):
-    await send_product_to_channel()
+    await send_product_to_channel1()
     await message.answer("Товар успешно отправлен в канал.")
 
 @dp.message_handler(commands=["s2"])
@@ -66,9 +109,7 @@ async def start_handler(message: types.Message):
     await message.answer("Товар успешно отправлен в канал.")
 
 
-
-
-async def send_product_to_channel():
+async def send_product_to_channel1():
     # Идентификатор канала
     channel_id = "@sman_online"
 
@@ -91,11 +132,10 @@ async def send_product_to_channel():
     # Отправка сообщения с фото товара, описанием и кнопкой в канал
     await bot.send_photo(
         chat_id=channel_id,
-        photo="https://sman.kz/upload/resize_cache/iblock/840/450_450_140cd750bba9870f18aada2478b24840a/nkblq0co5dr7z3loc1qvvfro4uuqd88o.jpg",  # Ссылка на фото товара или загрузите локальный файл
+        photo="https://drive.google.com/file/d/1U72ik_dqOKzAlfwVKeAUhIlZ9QrZlbtu/view?usp=sharing",  # Ссылка на фото товара или загрузите локальный файл
         caption=text,
         reply_markup=keyboard
     )
-
 
 
 async def send_product_to_channel2():
@@ -153,6 +193,50 @@ async def send_product_to_channel3():
         reply_markup=keyboard
     )
 
+from aiogram import types
+
+async def send_product_to_channel():
+    # Канал идентификаторы
+    channel_id = "@sman_online"
+
+    # Бот сілтемесінің үлгісі
+    bot_username = "smanonline_bot"
+    
+    # "SHOES_DATA" мәліметтері бойынша цикл
+    for category, prices in SHOES_DATA.items():
+        for price, products in prices.items():
+            for product in products:
+                # Тауар туралы мәліметтерді дайындау
+                product_name = f"{category} - {price} KZT"  # Категория мен бағаны көрсету
+                sizes = ", ".join(map(str, product["sizes"]))  # Өлшемдерді тізімге қосу
+                code = product["code"]
+                
+                # Хабарлама мәтінін дайындау
+                text = (
+                    f"🛍️ *{product_name}*\n\n"
+                    f"📏 Өлшемдері: {sizes}\n"
+                    f"🔖 Код: {code}\n\n"
+                    f"💸 *Бағасы:* {price} KZT\n\n"
+                    "Тауарды сатып алу үшін төмендегі батырманы басыңыз:"
+                )
+                
+                # Сатып алу сілтемесі - /buy командасын қолдану
+                bot_url = f"https://t.me/{bot_username}?start=buy_{code.replace('/', '_')}"
+
+                # Inline-клавиатураны жасау
+                keyboard = types.InlineKeyboardMarkup()
+                keyboard.add(types.InlineKeyboardButton("Сатып алу 🛒", url=bot_url))
+
+                # Хабарламаны арнаға жіберу
+                await bot.send_message(
+                    chat_id=channel_id,
+                    text=text,
+                    parse_mode="Markdown",
+                    reply_markup=keyboard
+                )
+
+
+
 
 
 # 🔍 Посмотреть мои заведения
@@ -164,6 +248,36 @@ async def handler(message: types.Message):
 
     await message.answer("Напишите сообщение оператору.", reply_markup=types.ReplyKeyboardRemove())
 
+@dp.message_handler(commands=['buy'])
+async def buy_command_handler(message: types.Message, state: FSMContext):
+    args = message.get_args()  # 'Mp16' сияқты кодты алу
+
+    if args:  # Егер код берілген болса
+        product_code = args.strip()  # Кодты алып тастаймыз
+
+        # SHOES_DATA деректерінен тауарды табу
+        for category, prices in SHOES_DATA.items():
+            for price, products in prices.items():
+                for product in products:
+                    if product["code"] == product_code:
+                        # Forma.s2 күйіне өту және күй деректерін сақтау
+                        await state.update_data(type=product_code)
+                        await Forma.s2.set()
+
+                        # Пайдаланушыға жауап беру
+                        await message.answer(
+                            f"Сіз {category} - {price} KZT тауарын таңдадыңыз.\n"
+                            f"📏 Өлшемдері: {', '.join(map(str, product['sizes']))}\n"
+                            f"🔖 Код: {product_code}\n\n"
+                            "Төмендегі батырманы басып таңдауыңызды растаңыз.",
+                            reply_markup=btn.cancel() if isinstance(btn.cancel(), InlineKeyboardMarkup) else InlineKeyboardMarkup()
+                        )
+                        return
+
+        # Егер код табылмаса
+        await message.answer("Кешіріңіз, бұл код бойынша тауар табылмады.")
+    else:
+        await message.answer("Тауар коды дұрыс емес немесе көрсетілмеген.")
 
 @dp.callback_query_handler()
 async def process_callback(callback_query: types.CallbackQuery, state: FSMContext):
@@ -171,8 +285,19 @@ async def process_callback(callback_query: types.CallbackQuery, state: FSMContex
     message_id = callback_query.message.message_id
     chat_id = callback_query.message.chat.id
 
+    
     # Основное меню
-    if data == "buy_shoes":
+    if data == "buy_shoes_by_code":
+        # Показать выбор категории обуви с удалением предыдущего сообщения
+        await Forma.s1.set()
+        await bot.edit_message_text(
+            chat_id=chat_id,
+            message_id=message_id,
+            text="Тікелей эфирде көрсетілген кодты ✏️ енгізңіз",
+            reply_markup=btn.cancel() if isinstance(btn.cancel(), InlineKeyboardMarkup) else InlineKeyboardMarkup()
+        )
+           
+    elif data == "buy_shoes":
         # Показать выбор категории обуви с удалением предыдущего сообщения
         await bot.edit_message_text(
             chat_id=chat_id,
@@ -180,6 +305,7 @@ async def process_callback(callback_query: types.CallbackQuery, state: FSMContex
             text="Сіз аяқ киім сатып алғыңыз келеді. Төменнен санатты таңдаңыз:",
             reply_markup=btn.category_selection_keyboard()
         )
+    
 
     elif data == "contact_manager":
         await bot.edit_message_text(
