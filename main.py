@@ -16,13 +16,15 @@ import time
 from FormaAdmin import*
 from ChatForma import*
 from data import SHOES_DATA
-from Formas import Forma
+from Formas import*
+import re
+from mongo import*
 
 
 
 generator = Generator()
 btn = Button()
-db = Database()
+db = MongoDB()
 
 """
 @dp.message_handler(commands=['start', 'go'])
@@ -61,192 +63,272 @@ async def start_command_handler(message: types.Message, state: FSMContext):
     if args.startswith("buy_"):
         product_code = args.replace("buy_", "")
 
-        # SHOES_DATA ішінен тауарды іздеу
-        for category, prices in SHOES_DATA.items():
-            for price, products in prices.items():
-                for product in products:
-                    if product["code"] == product_code:
-                        await state.update_data(type=product_code)
-                        await Forma.s3.set()  # `Forma.s2` күйіне өту
+        # Ищем товар в базе данных по коду
+        product = db.getByCodeAllData(product_code)
+        
+        if product:
+            category = product.get("category", "Тауар")
+            price = product.get("discounted_price", "Белгісіз")
+            sizes = product.get("sizes", [])
+            initial_price = product.get("initial_price", price)
 
-                        # Пайдаланушыға тауар туралы ақпаратты жіберу және "Сатып алу" батырмасын көрсету
-                        await message.answer(
-                            f"Сіз {category} - {price} KZT тауарын таңдадыңыз.\n"
-                            f"📏 Қол жетімді өлшемдер: {', '.join(map(str, product['sizes']))}\n"
-                            f"🔖 Код: {product_code}\n\n"
-                            "Өлшемді таңдау үшін төмендегі батырманы басыңыз.",
-                            reply_markup=btn.size_keyboard(product['sizes'])  # Өлшемдер тізімін көрсететін батырмалар
-                        )
-                        return
+            # Сохраняем состояние и данные о товаре
+            await state.update_data(type=product_code)
+            await Forma.s3.set()  # Переход к следующему состоянию (Forma.s3)
 
-        # Егер код табылмаса
-        await message.answer("Кешіріңіз, бұл код бойынша тауар табылмады.")
+            # Отправка информации о товаре пользователю с кнопками размеров
+            await message.answer(
+                f"Сіз {category} - {price} KZT тауарын таңдадыңыз.\n"
+                f"❌ Алғашқы бағасы: {initial_price} тг\n"
+                f"✅ Жаңа баға: {price} тг\n"
+                f"📏 Қол жетімді өлшемдер: {', '.join(map(str, sizes))}\n"
+                f"🔖 Код: {product_code}\n\n"
+                "Өлшемді таңдау үшін төмендегі батырманы басыңыз.",
+                reply_markup=btn.size_keyboard(sizes)  # Кнопки с размерами
+            )
+        else:
+            # Если товар с данным кодом не найден
+            await message.answer("Кешіріңіз, бұл код бойынша тауар табылмады.")
     else:
-        await message.answer("Ботқа қош келдіңіз! Сатып алу үшін кодты таңдаңыз.")
+        await message.answer("Ботқа қош келдіңіз! Сатып алу үшін кодты таңдаңыз. @sman_online")
+
+# Запуск функции отправки сообщения при старте бота
+@dp.message_handler(commands=["m1"])
+async def start_handler(message: types.Message):
+    sex = "Ерлер"
+    price = "37 900"
+    await send_product_to_channel(sex, price)
+    await message.answer("Товар успешно отправлен в канал.")
 
 
 # Запуск функции отправки сообщения при старте бота
-@dp.message_handler(commands=["s"])
+@dp.message_handler(commands=["m2"])
 async def start_handler(message: types.Message):
-    await send_product_to_channel()
+    sex = "Ерлер"
+    price = "27 900"
+    await send_product_to_channel(sex, price)
+    await message.answer("Товар успешно отправлен в канал.")
+
+@dp.message_handler(commands=["m3"])
+async def start_handler(message: types.Message):
+    sex = "Ерлер"
+    price = "57 900"
+    await send_product_to_channel(sex, price)
+    await message.answer("Товар успешно отправлен в канал.")
+
+@dp.message_handler(commands=["m4"])
+async def start_handler(message: types.Message):
+    sex = "Ерлер"
+    price = "17 900"
+    await send_product_to_channel(sex, price)
+    await message.answer("Товар успешно отправлен в канал.")
+
+
+
+# Запуск функции отправки сообщения при старте бота
+@dp.message_handler(commands=["w1"])
+async def start_handler(message: types.Message):
+    sex = "Әйелдер"
+    price = "57 900"
+    await send_product_to_channel(sex, price)
     await message.answer("Товар успешно отправлен в канал.")
 
 
 # Запуск функции отправки сообщения при старте бота
-@dp.message_handler(commands=["s1"])
+@dp.message_handler(commands=["w2"])
 async def start_handler(message: types.Message):
-    await send_product_to_channel1()
+    sex = "Әйелдер"
+    price = "37 900"
+    await send_product_to_channel(sex, price)
     await message.answer("Товар успешно отправлен в канал.")
 
-@dp.message_handler(commands=["s2"])
+@dp.message_handler(commands=["w3"])
 async def start_handler(message: types.Message):
-    await send_product_to_channel2()
-    await message.answer("Товар успешно отправлен в канал.")
-
-@dp.message_handler(commands=["s3"])
-async def start_handler(message: types.Message):
-    await send_product_to_channel3()
+    sex = "Әйелдер"
+    price = "17 900"
+    await send_product_to_channel(sex, price)
     await message.answer("Товар успешно отправлен в канал.")
 
 
-async def send_product_to_channel1():
-    # Идентификатор канала
-    channel_id = "@sman_online"
-
-    # Данные товара
-    product_name = "Лофер GIAMPIERONICOLA"
-    price = "157 000 KZT"
-    size = "Размер: 40"
-    color = "Цвет: синий"
-    code = "Код: MN19/24-1"
-    text = f"{product_name}\nЦена: {price}\n{size}\n{color}\n{code}"
-
-    # Ссылка на бота
-    bot_username = "smanonline_bot"
-    bot_url = f"https://t.me/{bot_username}?start=buy_product_MN19_24_1"
-
-    # Создание Inline-кнопки "Сатып алу"
-    keyboard = types.InlineKeyboardMarkup()
-    keyboard.add(types.InlineKeyboardButton("Сатып алу", url=bot_url))
-
-    # Отправка сообщения с фото товара, описанием и кнопкой в канал
-    await bot.send_photo(
-        chat_id=channel_id,
-        photo="https://drive.google.com/file/d/1U72ik_dqOKzAlfwVKeAUhIlZ9QrZlbtu/view?usp=sharing",  # Ссылка на фото товара или загрузите локальный файл
-        caption=text,
-        reply_markup=keyboard
-    )
 
 
-async def send_product_to_channel2():
-    # Идентификатор канала
-    channel_id = "@sman_online"
-
-    # Данные товара
-    product_name = "Мужские кроссовки"
-    price = "157 000 KZT"
-    size = "Размер: 42"
-    stock = "В наличии: 5 пар"
-    text = f"{product_name}\nЦена: {price}\n{size}\n{stock}"
-
-    # Ссылка на бота
-    bot_username = "smanonline_bot"
-    bot_url = f"https://t.me/{bot_username}?start=buy_product"
-
-    # Создание Inline-кнопки "Сатып алу"
-    keyboard = types.InlineKeyboardMarkup()
-    keyboard.add(types.InlineKeyboardButton("Сатып алу", url=bot_url))
-
-    # Отправка сообщения с фото товара, описанием и кнопкой в канал
-    await bot.send_photo(
-        chat_id=channel_id,
-        photo="https://sman.kz/upload/resize_cache/iblock/bff/450_450_140cd750bba9870f18aada2478b24840a/6fbzu6308pskqaf2755w9aiuxzbvkzh0.jpg",  # Ссылка на фото товара или загрузите локальный файл
-        caption=text,
-        reply_markup=keyboard
-    )
-
-async def send_product_to_channel3():
-    # Идентификатор канала
-    channel_id = "@sman_online"
-
-    # Данные товара
-    product_name = "Лофер GIAMPIERONICOLA"
-    price = "157 000 KZT"
-    size = "Размер: 39"
-    color = "Цвет: черный"
-    code = "Код: MN24/24-1"
-    text = f"{product_name}\nЦена: {price}\n{size}\n{color}\n{code}"
-
-    # Ссылка на бота
-    bot_username = "smanonline_bot"
-    bot_url = f"https://t.me/{bot_username}?start=buy_product_MN24_24_1"
-
-    # Создание Inline-кнопки "Сатып алу"
-    keyboard = types.InlineKeyboardMarkup()
-    keyboard.add(types.InlineKeyboardButton("Сатып алу", url=bot_url))
-
-    # Отправка сообщения с фото товара, описанием и кнопкой в канал
-    await bot.send_photo(
-        chat_id=channel_id,
-        photo="https://sman.kz/upload/resize_cache/iblock/b9f/450_450_140cd750bba9870f18aada2478b24840a/vapke21k1n4bhl85bv2vtyu1vo7dthc6.jpg",  # Новое фото товара
-        caption=text,
-        reply_markup=keyboard
-    )
 
 from aiogram import types
 
-async def send_product_to_channel():
+async def send_product_to_channel(sex: str, price: str):
     # Канал идентификаторы
     channel_id = "@sman_online"
 
     # Бот сілтемесінің үлгісі
     bot_username = "smanonline_bot"
-    
-    # "SHOES_DATA" мәліметтері бойынша цикл
-    for category, prices in SHOES_DATA.items():
-        for price, products in prices.items():
-            for product in products:
-                # Тауар туралы мәліметтерді дайындау
-                product_name = f"{category} - {price} KZT"  # Категория мен бағаны көрсету
-                sizes = ", ".join(map(str, product["sizes"]))  # Өлшемдерді тізімге қосу
-                code = product["code"]
-                
-                # Хабарлама мәтінін дайындау
-                text = (
-                    f"🛍️ *{product_name}*\n\n"
-                    f"📏 Өлшемдері: {sizes}\n"
-                    f"🔖 Код: {code}\n\n"
-                    f"💸 *Бағасы:* {price} KZT\n\n"
-                    "Тауарды сатып алу үшін төмендегі батырманы басыңыз:"
-                )
-                
-                # Сатып алу сілтемесі - /buy командасын қолдану
-                bot_url = f"https://t.me/{bot_username}?start=buy_{code.replace('/', '_')}"
 
-                # Inline-клавиатураны жасау
-                keyboard = types.InlineKeyboardMarkup()
-                keyboard.add(types.InlineKeyboardButton("Сатып алу 🛒", url=bot_url))
+    # Получаем товары из MongoDB по фильтру
+    # Отбираем только "Ерлер" с ценой 37 900
+    products = db.getBySexPrice(sex, price)
 
-                # Хабарламаны арнаға жіберу
-                await bot.send_message(
-                    chat_id=channel_id,
-                    text=text,
-                    parse_mode="Markdown",
-                    reply_markup=keyboard
-                )
+    for product in products:
+        # Извлекаем информацию о товаре
+        category = product.get("category", "Ерлер")
+        price = product.get("discounted_price", "37 900")
+        sizes = ", ".join(map(str, product.get("sizes", [])))
+        code = product.get("code", "")
+        file_id = product.get("file_id")  # Извлекаем file_id фотографии
+
+        # Подготовка текста сообщения
+        product_name = f"{category} - {price} KZT"  # Категория и цена
+        text = (
+            f"🛍️ *{product_name}*\n\n"
+            f"📏 Өлшемдері: {sizes}\n"
+            f"🔖 Код: {code}\n\n"
+            f"💸 *Бағасы:* {price} KZT\n\n"
+            "Тауарды сатып алу үшін төмендегі батырманы басыңыз:"
+        )
+        
+        # Ссылка на покупку с использованием команды /buy
+        bot_url = f"https://t.me/{bot_username}?start=buy_{code.replace('/', '_')}"
+
+        # Создание inline-клавиатуры
+        keyboard = types.InlineKeyboardMarkup()
+        keyboard.add(types.InlineKeyboardButton("Сатып алу 🛒", url=bot_url))
+
+        # Отправка сообщения в канал с фото или без
+        if file_id:
+            # Если есть file_id, отправляем фото с описанием
+            await bot.send_photo(
+                chat_id=channel_id,
+                photo=file_id,
+                caption=text,
+                parse_mode="Markdown",
+                reply_markup=keyboard
+            )
+        else:
+            # Если file_id отсутствует, отправляем только текст
+            await bot.send_message(
+                chat_id=channel_id,
+                text=text,
+                parse_mode="Markdown",
+                reply_markup=keyboard
+            )
 
 
 
 
 
 # 🔍 Посмотреть мои заведения
-@dp.message_handler(commands=['chat'])
+@dp.message_handler(commands=['chats'])
 @dp.message_handler(Text(equals="🗣 Менеджермен байланыс"), content_types=['text'])
 async def handler(message: types.Message):
     
     await Chat.waiting_for_message.set()
 
     await message.answer("Напишите сообщение оператору.", reply_markup=types.ReplyKeyboardRemove())
+
+
+@dp.message_handler(content_types=types.ContentType.PHOTO)
+async def get_file_id_and_upload_data(message: types.Message):
+    # Получаем file_id
+    file_id = message.photo[-1].file_id
+
+    # Получаем текст (подпись к фото)
+    if message.caption:
+        text = message.caption.strip()
+    else:
+        await message.reply("Пожалуйста, отправьте фото с подписью.")
+        return
+
+    # Разбиваем текст на строки и проверяем формат
+    lines = text.strip().split('\n')
+    if len(lines) < 3:
+        await message.reply("Неправильный формат сообщения. Пожалуйста, отправьте категорию, цену и данные товара.")
+        return
+
+    # Извлекаем категорию, цены и код/размеры
+    category = lines[0].strip()
+    initial_price = lines[1].strip()  # Исходная цена
+    code_sizes_line = lines[2].strip()
+
+    # Проверяем, является ли цена "57 900"
+    if initial_price.replace(" ", "") == "57900":
+        discounted_price = initial_price  # Текущая цена остается 57 900
+        initial_price = "67 900"  # Устанавливаем старую цену в 67 900
+    else:
+        # Для других значений: прибавляем 10 000 тг к начальной цене
+        discounted_price = initial_price
+        initial_price = str(int(initial_price.replace(" ", "")) + 10000)
+
+    # Используем регулярное выражение для извлечения кода и размеров
+    pattern = r'^(?P<code>\w+)/(?P<sizes>[\d,\s]+)$'
+
+    match = re.match(pattern, code_sizes_line)
+    if match:
+        code = match.group('code')
+        sizes_str = match.group('sizes')
+
+        # Преобразуем строку размеров в список целых чисел
+        sizes = [int(size.strip()) for size in sizes_str.split(',') if size.strip().isdigit()]
+
+        # Подготовка данных для вставки в MongoDB
+        item_data = {
+            'file_id': file_id,
+            'category': category,
+            'initial_price': initial_price,
+            'discounted_price': discounted_price,
+            'code': code,
+            'sizes': sizes
+        }
+
+        # Вставка данных в базу данных через экземпляр db
+        inserted_id = db.insert_item(item_data)
+
+        # Формирование ответа для отправки пользователю
+        sizes_text = ", ".join(map(str, sizes))
+        response_text = (
+            f"{category} аяқ киімі\n"
+            f"🛍️🧔🏻‍♂️{category} аяқ киімі - SALE\n\n"
+            f"❌Алғашқы бағасы: {initial_price} тг\n"
+            f"✅Жаңа баға: {discounted_price} тг\n\n"
+            f"Өлшемдері: {sizes_text}"
+        )
+
+        await message.reply(response_text)
+    else:
+        await message.reply("Неправильный формат данных. Пожалуйста, используйте формат 'Код/размеры'.")
+
+
+@dp.message_handler(commands=['get_all'])
+async def send_all_items(message: types.Message):
+    """Обработчик команды /get_all для отправки всех данных с фотографиями."""
+    items = db.get_all_items()
+    if not items:
+        await message.reply("Нет данных для отображения.")
+        return
+
+    for item in items:
+        # Извлекаем данные из записи
+        file_id = item.get('file_id')
+        category = item.get('category', 'Неизвестная категория')
+        initial_price = item.get('initial_price', 'Неизвестная цена')
+        discounted_price = item.get('discounted_price', 'Неизвестная цена')
+        code = item.get('code', 'Неизвестный код')
+        sizes = item.get('sizes', [])
+
+        # Формируем текст сообщения с информацией
+        sizes_text = ", ".join(map(str, sizes))
+        caption = (
+            f"{category} аяқ киімі\n"
+            f"🛍️🧔🏻‍♂️{category} аяқ киімі - SALE\n\n"
+            f"❌Алғашқы бағасы: {initial_price} тг\n"
+            f"✅Жаңа баға: {discounted_price} тг\n\n"
+            f"Өлшемдері: {sizes_text}"
+        )
+
+        # Отправляем фото и текст
+        try:
+            await bot.send_photo(chat_id=message.chat.id, photo=file_id, caption=caption)
+        except Exception as e:
+            await message.reply(f"Ошибка при отправке фото для {code}: {str(e)}")
+
+
 
 @dp.message_handler(commands=['buy'])
 async def buy_command_handler(message: types.Message, state: FSMContext):

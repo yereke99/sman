@@ -85,6 +85,9 @@ class Button:
         keyboard = ReplyKeyboardMarkup(resize_keyboard=True)
         for size in sizes:
             keyboard.add(KeyboardButton(str(size)))
+        
+        # Добавляем кнопку "🔕 Сатып алуды тоқтату" в нижнюю часть клавиатуры
+        keyboard.add(KeyboardButton("🔕 Сатып алуды тоқтату"))
         return keyboard
 
 
@@ -119,6 +122,14 @@ class Button:
 
         k = [
             "⬅️ Выйти из чата"
+        ]
+
+        return self._create_keyboard(k)
+    
+    def cancels(self):
+
+        k = [
+            "🔕 Сатып алуды тоқтату"
         ]
 
         return self._create_keyboard(k)

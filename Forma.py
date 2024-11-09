@@ -59,7 +59,7 @@ async def cancell_handler(message: types.Message, state: FSMContext):
     logging.info('Бас тарту!')
     
     await state.finish()
-    await message.reply('Сіз тапсырыстан бас тарттыңыз.', reply_markup=btn.menu_not_paid())
+    await message.reply('Сіз тапсырыстан бас тарттыңыз.', reply_markup=btn.menu())
 
 @dp.message_handler(lambda message: not message.text.isdigit(), state=Forma.s1)
 async def handler(message: types.Message):

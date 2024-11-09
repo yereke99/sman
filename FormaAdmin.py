@@ -106,9 +106,9 @@ async def cancell_handler(message: types.Message, state: FSMContext):
     logging.info('Бас тарту!')
     await state.finish()
     if message.from_user.id == admin or message.from_user.id == admin2:
-        await message.reply('Сіз тапсырыстан бас тарттыңыз.', reply_markup=btn.admin())
+        await message.reply('Сіз тапсырыстан бас тарттыңыз.', reply_markup=btn.menu())
     
-    await message.reply('Сіз тапсырыстан бас тарттыңыз.', reply_markup=btn.menu_not_paid())
+    await message.reply('Сіз тапсырыстан бас тарттыңыз.', reply_markup=btn.menu())
 
 @dp.message_handler(state=FormaAdmin.s1)
 async def handler(message: types.Message, state: FSMContext):
