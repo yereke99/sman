@@ -2,7 +2,9 @@ from pymongo import MongoClient
 
 class MongoDB:
     def __init__(self, host='localhost', port=27017, db_name='shoe_database'):
-        self.client = MongoClient(host, port)
+        """Инициализация подключения к MongoDB без аутентификации."""
+        connection_string = f"mongodb://{host}:{port}/{db_name}"
+        self.client = MongoClient(connection_string)
         self.db = self.client[db_name]
         self.collection = self.db['shoes']
 
@@ -29,18 +31,16 @@ class MongoDB:
         """Извлекает все данные по коду товара."""
         return self.collection.find_one({"code": code})
 
-    # Метод класса MongoDB для получения текущей цены по коду товара
     def get_price_by_code(self, code: str):
         """Извлекает текущую цену по коду товара."""
         result = self.collection.find_one({"code": code}, {"discounted_price": 1})
         return result["discounted_price"] if result else None
 
-    # Метод класса MongoDB для получения цены по коду и размеру
     def get_price_by_code_and_size(self, code: str, size: int):
         """Извлекает текущую цену по коду товара и размеру."""
         result = self.collection.find_one({"code": code, "sizes": size}, {"discounted_price": 1})
         return result["discounted_price"] if result else None
-    
+
     def remove_item_from_inventory(self, code: str, size: int):
         """Удаляет указанный размер из списка размеров по коду товара."""
         # Находим документ с указанным кодом и удаляем размер
@@ -50,8 +50,18 @@ class MongoDB:
         )
         # Возвращаем True, если один документ был обновлен, иначе False
         return result.modified_count > 0
-    # Метод для отображения всех элементов в коллекции
+        
+    def upsert_item(self, code, item_data):
+        """Добавляет или обновляет данные по коду товара."""
+        result = self.collection.update_one(
+            {"code": code},  # Поиск по коду
+            {"$set": item_data},  # Обновление данных
+            upsert=True  # Если не найдено, создаем новый документ
+        )
+        return result.upserted_id if result.upserted_id else "Updated"
+
     def display_all_items(self):
+        """Отображает все элементы в коллекции."""
         items = list(self.collection.find())
         for item in items:
             print(item)

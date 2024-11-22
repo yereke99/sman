@@ -21,10 +21,10 @@ import re
 from mongo import*
 
 
-
 generator = Generator()
 btn = Button()
 db = MongoDB()
+
 
 """
 @dp.message_handler(commands=['start', 'go'])
@@ -151,6 +151,63 @@ async def start_handler(message: types.Message):
 
 
 
+@dp.message_handler(commands=["code"])
+async def code_handler(message: types.Message):
+    # Идентификатор канала
+    channel_id = "@sman_online"  # Укажите ваш канал
+
+    # Извлекаем код из сообщения
+    args = message.text.split(" ", 1)  # Разделяем команду и аргумент
+    if len(args) < 2:
+        await message.reply("Код товара отсутствует. Используйте формат: /code <код товара>")
+        return
+
+    code = args[1].strip()
+    product = db.getByCodeAllData(code)
+
+    if product:
+        # Извлекаем данные о товаре
+        category = product.get("category", "Не указано")
+        price = product.get("discounted_price", "Не указано")
+        sizes = ", ".join(map(str, product.get("sizes", [])))
+        file_id = product.get("file_id", None)
+
+        # Формируем сообщение
+        product_name = f"{category} - {price} KZT"
+        text = (
+            f"🛍️ *{product_name}*\n\n"
+            f"📏 Өлшемдері: {sizes}\n"
+            f"🔖 Код: {code}\n\n"
+            f"💸 *Бағасы:* {price} KZT\n\n"
+            "Тауарды сатып алу үшін нажмите кнопку ниже:"
+        )
+        bot_username = "smanonline_bot"
+        # Ссылка на покупку
+        bot_url = f"https://t.me/{bot_username}?start=buy_{code.replace('/', '_')}"
+        keyboard = types.InlineKeyboardMarkup()
+        keyboard.add(types.InlineKeyboardButton("Сатып алу 🛒", url=bot_url))
+
+        # Отправляем сообщение в канал
+        if file_id:
+            await bot.send_photo(
+                chat_id=channel_id,
+                photo=file_id,
+                caption=text,
+                parse_mode="Markdown",
+                reply_markup=keyboard
+            )
+        else:
+            await bot.send_message(
+                chat_id=channel_id,
+                text=text,
+                parse_mode="Markdown",
+                reply_markup=keyboard
+            )
+
+        # Уведомляем пользователя об успешной отправке
+        await message.reply("Товар успешно отправлен в канал.")
+    else:
+        await message.reply(f"Товар с кодом {code} не найден.")
 
 
 from aiogram import types
@@ -211,6 +268,19 @@ async def send_product_to_channel(sex: str, price: str):
             )
 
 
+# Обработчик команды /manager
+@dp.message_handler(commands=["manager"])
+async def send_managers_info(message: types.Message):
+    # Текст для отправки
+    managers_text = (
+        "@sman_manager_womens - 👤 Әйелдер топтамасының сату менеджері\n\n"
+        "@sman_manager_mens - 👤 Ерлер топтамасының сату менеджері"
+    )
+    # Отправляем сообщение в указанную группу
+    channel_id = "@sman_online"
+    await bot.send_message(chat_id=channel_id, text=managers_text, parse_mode="Markdown")
+    # Подтверждаем пользователю, что сообщение отправлено
+    await message.reply("Менеджерлердің ақпараты топқа жіберілді!")
 
 
 
@@ -242,32 +312,29 @@ async def get_file_id_and_upload_data(message: types.Message):
         await message.reply("Неправильный формат сообщения. Пожалуйста, отправьте категорию, цену и данные товара.")
         return
 
-    # Извлекаем категорию, цены и код/размеры
+    # Извлекаем данные из сообщения
     category = lines[0].strip()
-    initial_price = lines[1].strip()  # Исходная цена
+    initial_price = lines[1].strip()
     code_sizes_line = lines[2].strip()
 
-    # Проверяем, является ли цена "57 900"
+    # Обработка цен
     if initial_price.replace(" ", "") == "57900":
-        discounted_price = initial_price  # Текущая цена остается 57 900
-        initial_price = "67 900"  # Устанавливаем старую цену в 67 900
+        discounted_price = initial_price
+        initial_price = "67 900"
     else:
-        # Для других значений: прибавляем 10 000 тг к начальной цене
         discounted_price = initial_price
         initial_price = str(int(initial_price.replace(" ", "")) + 10000)
 
-    # Используем регулярное выражение для извлечения кода и размеров
+    # Регулярное выражение для извлечения кода и размеров
     pattern = r'^(?P<code>\w+)/(?P<sizes>[\d,\s]+)$'
-
     match = re.match(pattern, code_sizes_line)
+
     if match:
         code = match.group('code')
         sizes_str = match.group('sizes')
-
-        # Преобразуем строку размеров в список целых чисел
         sizes = [int(size.strip()) for size in sizes_str.split(',') if size.strip().isdigit()]
 
-        # Подготовка данных для вставки в MongoDB
+        # Подготовка данных для вставки или обновления
         item_data = {
             'file_id': file_id,
             'category': category,
@@ -277,10 +344,10 @@ async def get_file_id_and_upload_data(message: types.Message):
             'sizes': sizes
         }
 
-        # Вставка данных в базу данных через экземпляр db
-        inserted_id = db.insert_item(item_data)
+        # Обновление или добавление в MongoDB
+        result = db.upsert_item(code, item_data)
 
-        # Формирование ответа для отправки пользователю
+        # Формирование ответа
         sizes_text = ", ".join(map(str, sizes))
         response_text = (
             f"{category} аяқ киімі\n"
@@ -289,11 +356,9 @@ async def get_file_id_and_upload_data(message: types.Message):
             f"✅Жаңа баға: {discounted_price} тг\n\n"
             f"Өлшемдері: {sizes_text}"
         )
-
-        await message.reply(response_text)
+        await message.reply(f"Данные успешно {'добавлены' if result != 'Updated' else 'обновлены'}:\n\n{response_text}")
     else:
         await message.reply("Неправильный формат данных. Пожалуйста, используйте формат 'Код/размеры'.")
-
 
 @dp.message_handler(commands=['get_all'])
 async def send_all_items(message: types.Message):

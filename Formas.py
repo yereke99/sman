@@ -174,7 +174,6 @@ async def handler(message: types.Message, state: FSMContext):
         await state.finish()
 
 
-
 @dp.message_handler(state=Forma.s4)
 async def handler(message: types.Message, state: FSMContext):
     async with state.proxy() as data:
@@ -189,10 +188,13 @@ async def handler(message: types.Message, state: FSMContext):
         
         if price:
             await Forma.next()  # Переход к следующему состоянию
-            await message.reply(
-                f"Төлеуге қажет сома: {price} KZT.\nСілтеме арқылы төлем жасаңыз және pdf чекті Поделится деген түймені баса отыра телеграмм ботқа кері жіберіңіз",
-                reply_markup=btn.payment(),
-            )
+            with open("/home/sman/photo/example.jpeg", 'rb') as photo:
+                await bot.send_photo(
+                    message.from_user.id,
+                    photo=photo,
+                    caption=f"Төлеуге қажет сома: {price} KZT.\nСілтеме арқылы төлем жасаңыз және pdf чекті Поделится деген түймені баса отыра телеграмм ботқа кері жіберіңіз",
+                    reply_markup=btn.payment(),
+                )
         else:
             # Если цена не найдена для данного кода
             await message.reply("Кешіріңіз, бұл кодпен баға табылмады.", reply_markup=types.ReplyKeyboardRemove())
@@ -249,7 +251,7 @@ async def handler(message: types.Message, state: FSMContext):
                 reply_markup=btn.menu()
             )
             # Уведомление администраторов о несоответствии суммы
-            for admin_id in [admin, admin3]:
+            for admin_id in [admin, admin2, admin3, admin4]:
                 await bot.send_document(
                     admin_id,
                     document=document.file_id,
@@ -275,7 +277,7 @@ async def handler(message: types.Message, state: FSMContext):
                 reply_markup=btn.menu()
             )
             # Уведомление администраторов о неверном продавце
-            for admin_id in [admin, admin3]:
+            for admin_id in [admin, admin2, admin3, admin4]:
                 await bot.send_document(
                     admin_id,
                     document=document.file_id,
@@ -312,7 +314,7 @@ async def handler(message: types.Message, state: FSMContext):
 
     except Exception as e:
         print(e)
-        for admin_id in [admin, admin2]:
+        for admin_id in [admin, admin2, admin3, admin4]:
             await bot.send_message(
                 admin_id,
                 text=f"Error: {str(e)}",
@@ -365,7 +367,7 @@ async def handler(message: types.Message, state: FSMContext):
     )
 
     # Отправка уведомления администраторам с PDF-файлом
-    for admin_id in [admin, admin2]:
+    for admin_id in [admin, admin2, admin3, admin4]:
         try:
             await bot.send_document(
                 admin_id,
