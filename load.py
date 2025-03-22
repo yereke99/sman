@@ -6,6 +6,12 @@ from aiogram.contrib.fsm_storage.memory import MemoryStorage
 from aiogram import types
 from config import*
 
+try:
+    from zoneinfo import ZoneInfo
+except ImportError:
+    from backports.zoneinfo import ZoneInfo
+
+
 bot = Bot(token=api_token)
 storage = MemoryStorage()
 

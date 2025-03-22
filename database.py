@@ -12,6 +12,15 @@ class Database():
                                     id INTEGER PRIMARY KEY AUTOINCREMENT,
                                     sum BIGINT
                                 )"""
+        
+        self.tableBuy = """CREATE TABLE IF NOT EXISTS buy(
+                        id INTEGER PRIMARY KEY AUTOINCREMENT,
+                        code VARCHAR(255),
+                        price INTEGER,
+                        contact VARCHAR(255),
+                        address VARCHAR(255),
+                        dataPay VARCHAR(255)
+                    )"""
 
 
         self.tableJustClicked = """CREATE TABLE just(
@@ -85,13 +94,49 @@ class Database():
     def createTables(self):
         #self.cursor.execute(self.tableCreate)
         #self.cursor.execute(self.tableLoto)
-        self.cursor.execute(self.tableJustClicked)
+        #self.cursor.execute(self.tableJustClicked)
         #self.cursor.execute(self.tableCinemaPaid)
         #self.cursor.execute(self.tableMoney)
         #self.cursor.execute(self.tableCinema)
         #self.cursor.execute("INSERT OR IGNORE INTO money(id, sum) VALUES (1, 0)")
-        #self.db.commit()
+        self.cursor.execute(self.tableBuy)
+        self.db.commit()
         print("Created all tables and initialized money table if necessary.")
+    
+    def InsertClientss(self, id, code, price, contact, address, dataPay):
+        query = """
+            INSERT INTO buy (id, code, price, contact, address, dataPay)
+            VALUES (?, ?, ?, ?, ?, ?)
+        """
+        try:
+            self.cursor.execute(query, (id, code, price, contact, address, dataPay))
+            self.db.commit()
+            print("Client inserted successfully.")
+        except sqlite3.IntegrityError as e:
+            print(f"Error inserting client: {e}")
+    
+    def fetch_all_data(self):
+        query = "SELECT * FROM buy"
+        self.cursor.execute(query)
+        return self.cursor.fetchall()
+
+    def create_excel(self, filename):
+        data = self.fetch_all_data()
+        workbook = Workbook(filename)
+        worksheet = workbook.add_worksheet("Buy Data")
+        headers = ['ID', 'Code', 'Price', 'Contact', 'Address', 'DataPay']
+        
+        # Write headers
+        for col_num, header in enumerate(headers):
+            worksheet.write(0, col_num, header)
+        
+        # Write data
+        for row_num, row_data in enumerate(data, 1):
+            for col_num, cell_data in enumerate(row_data):
+                worksheet.write(row_num, col_num, cell_data)
+        
+        workbook.close()
+        print(f"Excel file '{filename}' created successfully.")
 
     def JustInsert(self, id, userName, dataR) -> bool:
         try:
@@ -248,6 +293,7 @@ class Database():
             return True
 
         return False 
+
     
   
     def gatherJust(self):

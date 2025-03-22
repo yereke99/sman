@@ -5,13 +5,16 @@ services:
     image: mongo:latest
     container_name: mongodb
     ports:
-      - '27017:27017'  # Открытие порта для внешнего подключения
+      - '27017:27017'
     volumes:
-      - ./data/db:/data/db
+      - mongo-data:/data/db
     restart: always
     networks:
-      - mongo-network  # Настройка сети
+      - mongo-network
 
 networks:
   mongo-network:
     driver: bridge
+
+volumes:
+  mongo-data:

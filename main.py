@@ -19,12 +19,33 @@ from data import SHOES_DATA
 from Formas import*
 import re
 from mongo import*
+from database import Database
 
 
 generator = Generator()
 btn = Button()
 db = MongoDB()
+dbs = Database()
 
+
+
+@dp.message_handler(Text(equals="📊 Статистика"), content_types=['text'])
+async def handler(message: types.Message):
+    if message.from_user.id in {admin, admin2, admin3, admin4}:
+        dbs.create_excel('./excell/sold.xlsx')
+        await bot.send_document(message.from_user.id, open('./excell/sold.xlsx', 'rb'))
+
+
+@dp.message_handler(commands=['admin'])
+async def handler(message: types.Message):
+    print(message.from_user.id)
+    if message.from_user.id in {admin, admin2, admin3, admin4}:
+        await bot.send_message(
+        message.from_user.id,
+        text="😊 *Сәлеметсіз бе %s !\nСіздің статусыңыз 👤 Админ(-ка-)*"%message.from_user.first_name,
+        parse_mode="Markdown",
+        reply_markup=btn.admin()
+    )
 
 """
 @dp.message_handler(commands=['start', 'go'])
@@ -128,7 +149,7 @@ async def start_handler(message: types.Message):
 # Запуск функции отправки сообщения при старте бота
 @dp.message_handler(commands=["w1"])
 async def start_handler(message: types.Message):
-    sex = "Әйелдер"
+    sex = "Қыздар"
     price = "57 900"
     await send_product_to_channel(sex, price)
     await message.answer("Товар успешно отправлен в канал.")
@@ -137,14 +158,14 @@ async def start_handler(message: types.Message):
 # Запуск функции отправки сообщения при старте бота
 @dp.message_handler(commands=["w2"])
 async def start_handler(message: types.Message):
-    sex = "Әйелдер"
+    sex = "Қыздар"
     price = "37 900"
     await send_product_to_channel(sex, price)
     await message.answer("Товар успешно отправлен в канал.")
 
 @dp.message_handler(commands=["w3"])
 async def start_handler(message: types.Message):
-    sex = "Әйелдер"
+    sex = "Қыздар"
     price = "17 900"
     await send_product_to_channel(sex, price)
     await message.answer("Товар успешно отправлен в канал.")
@@ -273,8 +294,8 @@ async def send_product_to_channel(sex: str, price: str):
 async def send_managers_info(message: types.Message):
     # Текст для отправки
     managers_text = (
-        "@sman_manager_womens - 👤 Әйелдер топтамасының сату менеджері\n\n"
-        "@sman_manager_mens - 👤 Ерлер топтамасының сату менеджері"
+        "@sman_manager_womens - 👩🏼 Әйелдер топтамасының сату менеджері\n\n"
+        "@sman_manager_mens - 🧔🏻‍♂️ Ерлер топтамасының сату менеджері"
     )
     # Отправляем сообщение в указанную группу
     channel_id = "@sman_online"

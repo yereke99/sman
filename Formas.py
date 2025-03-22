@@ -11,7 +11,6 @@ from database import Database
 import datetime
 from main import*
 import asyncio
-from config import admin, admin3
 from datetime import datetime
 from traits import *
 import time
@@ -21,12 +20,12 @@ import os
 from aiogram.types import InputMediaPhoto, InputMediaVideo
 from data import SHOES_DATA
 from mongo import*
-
+from database import Database
 
 
 db = MongoDB()
 btn = Button()
-
+dbs = Database()
 
 
 # Ensure the directory exists
@@ -240,7 +239,7 @@ async def handler(message: types.Message, state: FSMContext):
             data['fileName'] = file_name
 
         expected_price = convert_currency_to_int(data['price'])
-        actual_price = convert_currency_to_int(data['pdf_result'][2])
+        actual_price = convert_currency_to_int(data['pdf_result'][1])
 
         # Проверка корректности суммы
         if actual_price != expected_price:
@@ -269,7 +268,7 @@ async def handler(message: types.Message, state: FSMContext):
             return
 
         # Проверка продавца
-        if data['pdf_result'][4] not in ["Сатушының ЖСН/БСН 190540002794", "ИИН/БИН продавца 190540002794"]:
+        if data['pdf_result'][3] not in ["Сатушының ЖСН/БСН 190540002794", "ИИН/БИН продавца 190540002794"]:
             await bot.send_message(
                 message.from_user.id,
                 text="*Дұрыс емес счетқа төледіңіз!\nҚайталап көріңіз*",
@@ -353,6 +352,18 @@ async def handler(message: types.Message, state: FSMContext):
         price = data.get('price')
         file_name = data.get('fileName')
         file_path = os.path.join('./pdf/', file_name)
+    
+
+    time_now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+
+    dbs.InsertClientss(
+        message.from_user.id,
+        str(data['type']),
+        convert_currency_to_int(data['price']),
+        str(data['contact']),
+        str(data['address']),
+        str(time_now),
+    )
 
     # Отправка сообщения пользователю
     await message.reply(

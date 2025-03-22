@@ -19,6 +19,14 @@ class Button:
 
         return button
     
+    def admin(self):
+        k = [
+            "📊 Статистика",
+        ]
+
+        return self._create_keyboard(k)
+
+    
     def payment(self):
 
         keyboard = types.InlineKeyboardMarkup()
